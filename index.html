@@ -1,100 +1,58 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Justpose Live Gallery</title>
-    <style>
-        /* Modern & Dark Theme */
-        body { background: #000; color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; text-align: center; }
-        header h1 { font-size: 30px; font-weight: 900; letter-spacing: 2px; margin-top: 20px; text-transform: uppercase; }
-        #event-display { color: #00ffff; font-size: 14px; margin-bottom: 20px; font-weight: bold; }
-        
-        /* Grid para sa Photos */
-        #gallery { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); 
-            gap: 10px; 
-            max-width: 1200px; 
-            margin: 0 auto; 
-        }
-
-        .img-card { 
-            background: #111; 
-            border-radius: 12px; 
-            overflow: hidden; 
-            border: 1px solid #222; 
-            aspect-ratio: 1/1;
-            position: relative;
-        }
-
-        .img-card img { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: cover; 
-            cursor: pointer;
-            transition: transform 0.3s;
-        }
-
-        .img-card img:hover { transform: scale(1.05); }
-
-        .loading-text { color: #444; margin-top: 50px; font-style: italic; }
-    </style>
+    <title>Justpose Gallery</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-    <header><h1>JUSTPOSE GALLERY</h1></header>
-    <div id="event-display">CONNECTING...</div>
+    <header><h1 id="mainTitle">JUSTPOSE GALLERY</h1></header>
     
-    <div id="gallery">
-        <div class="loading-text">Waiting for photos...</div>
-    </div>
+    <div id="gallery"></div>
 
     <script>
-        // 1. Kunin ang Event ID mula sa URL (?event=seeyou)
         const urlParams = new URLSearchParams(window.location.search);
         const eventId = urlParams.get('event');
-        const display = document.getElementById('event-display');
-        const gal = document.getElementById('gallery');
+        const gallery = document.getElementById('gallery');
 
         if (eventId) {
-            display.innerText = "EVENT: " + eventId.toUpperCase();
-            
-            // 2. Firebase Database URL (Ito ang nagkokonekta sa Python App at Website)
+            // Firebase URL (Dito kinukuha ang real-time data)
             const fbURL = `https://justposegallery-default-rtdb.asia-southeast1.firebasedatabase.app/events/${eventId}.json`;
 
-            function loadImages() {
+            function loadPhotos() {
                 fetch(fbURL)
-                    .then(r => r.json())
+                    .then(res => res.json())
                     .then(data => {
                         if (data) {
-                            gal.innerHTML = ""; // Clear loading text
+                            gallery.innerHTML = ""; // Linisin ang gallery bago i-update
                             
-                            // I-reverse ang order para laging una ang pinakabago
-                            const photos = Object.values(data).reverse();
+                            // I-reverse para laging nasa taas ang pinakabago
+                            const photoArray = Object.values(data).reverse();
                             
-                            photos.forEach(item => {
+                            photoArray.forEach(item => {
                                 const card = document.createElement('div');
-                                card.className = "img-card";
+                                card.className = "img-card"; // Gamit ang design mo sa style.css
                                 
-                                // Direct Link mula sa GitHub Raw ang gamit natin
-                                card.innerHTML = `<img src="${item.url}" onclick="window.open('${item.url}', '_blank')">`;
-                                gal.appendChild(card);
+                                // Pag-click, bubukas ang full image sa bagong tab
+                                card.onclick = () => window.open(item.url, '_blank');
+                                
+                                card.innerHTML = `<img src="${item.url}">`;
+                                gallery.appendChild(card);
                             });
                         } else {
-                            gal.innerHTML = "<div class='loading-text'>No photos found yet.</div>";
+                            gallery.innerHTML = "<p style='text-align:center; width:100%; color:#555;'>No photos found yet.</p>";
                         }
                     })
                     .catch(err => console.error("Sync Error:", err));
             }
 
-            // Auto-refresh tuwing 5 seconds para real-time ang labas ng photos
-            loadImages();
-            setInterval(loadImages, 5000);
+            // Real-time update tuwing 5 seconds
+            loadPhotos();
+            setInterval(loadPhotos, 5000);
 
         } else {
-            display.innerText = "⚠️ ERROR: NO EVENT ID FOUND";
-            gal.innerHTML = "<p>Make sure the URL has ?event=YOUR_NAME</p>";
+            gallery.innerHTML = "<p style='text-align:center; width:100%; color:red;'>⚠️ MISSING EVENT ID</p>";
         }
     </script>
 </body>
