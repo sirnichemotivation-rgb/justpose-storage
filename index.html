@@ -5,162 +5,79 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>JUSTPOSE GALLERY</title>
     <style>
-        /* UI DESIGN BASE SA IYONG SCREENSHOTS */
-        body { background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; overflow-x: hidden; }
-        
-        header { 
-            display: flex; justify-content: center; align-items: center; 
-            padding: 20px 0; background: #000; position: sticky; top: 0; 
-            z-index: 100; border-bottom: 1px solid #111; 
-        }
+        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 0; overflow-x: hidden; }
+        header { display: flex; justify-content: center; align-items: center; padding: 20px 0; background: #000; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #111; }
         .main-logo { height: 60px; width: auto; object-fit: contain; }
-
-        #gallery { 
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
-            gap: 12px; padding: 15px; padding-bottom: 50px;
-        }
-        .img-card { 
-            background: #111; border-radius: 12px; overflow: hidden; 
-            height: 190px; border: 1px solid #222; position: relative;
-            animation: fadeIn 0.5s ease-in;
-        }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        #gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; padding: 15px; }
+        .img-card { background: #111; border-radius: 12px; overflow: hidden; height: 190px; border: 1px solid #222; }
         .img-card img { width: 100%; height: 100%; object-fit: cover; cursor: pointer; }
-
-        /* FULLSCREEN MODAL */
         #photoModal { display: none; position: fixed; inset: 0; background: #000; z-index: 1000; flex-direction: column; }
-        #modalContent { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; width: 100vw; height: 100vh; scroll-behavior: smooth; }
-        .folder-item { 
-            min-width: 100vw; height: 100vh; scroll-snap-align: center; 
-            display: flex; justify-content: center; align-items: center; position: relative; 
-        }
-        .folder-item img { max-width: 95%; max-height: 85%; object-fit: contain; }
-
-        .download-btn { 
-            position: absolute; bottom: 40px; right: 30px; background: #fff; color: #000; 
-            width: 55px; height: 55px; border-radius: 50%; border: none; font-size: 24px; 
-            font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 4px 15px rgba(255,255,255,0.3);
-        }
-        .close-x { 
-            position: absolute; top: 25px; left: 25px; font-size: 30px; color: #fff; 
-            z-index: 9999; background: rgba(0,0,0,0.5); width: 45px; height: 45px; 
-            display: flex; align-items: center; justify-content: center; border-radius: 50%; cursor: pointer;
-        }
-        .loader { text-align: center; padding: 50px; color: #444; font-weight: bold; }
+        #modalContent { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; width: 100vw; height: 100vh; }
+        .folder-item { min-width: 100vw; height: 100vh; scroll-snap-align: center; display: flex; justify-content: center; align-items: center; position: relative; }
+        .folder-item img { max-width: 95%; max-height: 80%; object-fit: contain; }
+        .download-btn { position: absolute; bottom: 40px; right: 30px; background: #fff; color: #000; width: 55px; height: 55px; border-radius: 50%; border: none; font-size: 24px; font-weight: bold; cursor: pointer; }
+        .close-x { position: absolute; top: 25px; left: 25px; font-size: 30px; color: #fff; z-index: 9999; background: rgba(0,0,0,0.5); width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 50%; cursor: pointer; }
     </style>
 </head>
 <body>
-
-    <header>
-        <img src="logo.png" alt="JUSTPOSE" class="main-logo">
-    </header>
-    
-    <div id="gallery"><div class="loader">SCANNING GALLERY...</div></div>
-
-    <div id="photoModal">
-        <div class="close-x" onclick="closeModal()">×</div>
-        <div id="modalContent"></div>
-    </div>
+    <header><img src="logo.png" alt="JUSTPOSE GALLERY" class="main-logo"></header>
+    <div id="gallery"></div>
+    <div id="photoModal"><div class="close-x" onclick="closeModal()">×</div><div id="modalContent"></div></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getStorage, ref, listAll, getDownloadURL, getMetadata } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-        // FIREBASE CONFIG
-        const firebaseConfig = {
-            storageBucket: "justposegallery.appspot.com" 
-        };
-
+        const firebaseConfig = { storageBucket: "justposegallery.appspot.com" };
         const app = initializeApp(firebaseConfig);
         const storage = getStorage(app);
         const eventId = new URLSearchParams(window.location.search).get('event');
 
         async function loadGallery() {
-            if (!eventId) {
-                document.getElementById('gallery').innerHTML = "<div class='loader'>MISSING EVENT ID</div>";
-                return;
-            }
-
+            if (!eventId) return;
             const gal = document.getElementById('gallery');
-            const rootRef = ref(storage, eventId);
-
             try {
-                // RECURSIVE FUNCTION: Kinukuha lahat ng images kahit nasa loob ng sub-folders
-                async function getAllImages(folderRef) {
+                async function getAllImages(fRef) {
                     let results = [];
-                    const res = await listAll(folderRef);
-                    
-                    // Kunin images sa kasalukuyang folder
-                    const filePromises = res.items.map(async (item) => {
-                        const url = await getDownloadURL(item);
-                        const meta = await getMetadata(item);
-                        return { url, time: new Date(meta.timeCreated) };
+                    const res = await listAll(fRef);
+                    const files = res.items.map(async (i) => {
+                        const u = await getDownloadURL(i);
+                        const m = await getMetadata(i);
+                        return { url: u, time: new Date(m.timeCreated) };
                     });
-                    results.push(...(await Promise.all(filePromises)));
-
-                    // Pasukin ang mga sub-folders (Prefixes)
+                    results.push(...(await Promise.all(files)));
                     for (const folder of res.prefixes) {
-                        const subImages = await getAllImages(folder);
-                        results.push(...subImages);
+                        results.push(...(await getAllImages(folder)));
                     }
                     return results;
                 }
-
-                let allPhotos = await getAllImages(rootRef);
-
-                if (allPhotos.length === 0) {
-                    gal.innerHTML = "<div class='loader'>NO PHOTOS UPLOADED YET</div>";
-                    return;
-                }
-
-                // Sort: Pinakabagong upload sa taas (Latest First)
+                let allPhotos = await getAllImages(ref(storage, eventId));
                 allPhotos.sort((a, b) => b.time - a.time);
-
                 gal.innerHTML = "";
                 allPhotos.forEach((item, index) => {
                     const card = document.createElement('div');
-                    card.className = 'img-card';
+                    card.className = "img-card";
                     card.innerHTML = `<img src="${item.url}" loading="lazy">`;
                     card.onclick = () => openModal(allPhotos, index);
                     gal.appendChild(card);
                 });
-
-            } catch (e) {
-                console.error("Firebase Error:", e);
-                gal.innerHTML = `<div class='loader'>ERROR LOADING GALLERY<br><span style="font-size:10px; color:red;">${e.message}</span></div>`;
-            }
+            } catch (e) { console.error(e); }
         }
 
         window.openModal = function(items, startIndex) {
             const modal = document.getElementById('photoModal');
             const cont = document.getElementById('modalContent');
             modal.style.display = 'flex';
-            document.body.style.overflow = 'hidden'; // Stop scrolling background
             cont.innerHTML = "";
-
             items.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'folder-item';
-                div.innerHTML = `
-                    <img src="${item.url}">
-                    <button class="download-btn" onclick="downloadImage('${item.url}')">↓</button>
-                `;
+                div.innerHTML = `<img src="${item.url}"><button class="download-btn" onclick="window.open('${item.url}')">↓</button>`;
                 cont.appendChild(div);
             });
             cont.scrollLeft = window.innerWidth * startIndex;
         }
-
-        window.downloadImage = function(url) {
-            // Buksan sa bagong tab para sa mobile download
-            window.open(url, '_blank');
-        }
-
-        window.closeModal = function() {
-            document.getElementById('photoModal').style.display = 'none';
-            document.body.style.overflow = 'auto';
-        }
-
+        window.closeModal = function() { document.getElementById('photoModal').style.display = 'none'; }
         window.onload = loadGallery;
     </script>
 </body>
