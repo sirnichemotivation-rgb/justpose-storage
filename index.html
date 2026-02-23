@@ -5,18 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>JUSTPOSE GALLERY</title>
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 10px; overflow-x: hidden; }
-        header { display: flex; justify-content: center; align-items: center; padding: 20px 0; background: #000; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #111; }
-        .main-logo { height: 70px; width: auto; object-fit: contain; }
-        #gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; padding-top: 20px; padding-bottom: 50px; }
-        .img-card { background: #111; border-radius: 12px; overflow: hidden; height: 190px; border: 1px solid #222; }
+        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 0; overflow-x: hidden; }
+        header { text-align: center; padding: 20px; background: #000; border-bottom: 1px solid #111; position: sticky; top: 0; z-index: 100; }
+        .main-logo { height: 60px; width: auto; object-fit: contain; }
+        #gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; padding: 15px; }
+        .img-card { background: #111; border-radius: 10px; overflow: hidden; height: 200px; border: 1px solid #222; cursor: pointer; }
         .img-card img { width: 100%; height: 100%; object-fit: cover; }
         #photoModal { display: none; position: fixed; inset: 0; background: #000; z-index: 1000; flex-direction: column; }
         #modalContent { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; width: 100vw; height: 100vh; }
         .folder-item { min-width: 100vw; height: 100vh; scroll-snap-align: center; display: flex; justify-content: center; align-items: center; position: relative; }
-        .folder-item img { max-width: 95%; max-height: 80%; object-fit: contain; }
-        .mini-download-btn { position: absolute; bottom: 40px; right: 30px; background: #fff; color: #000; width: 55px; height: 55px; border-radius: 50%; border: none; font-size: 24px; font-weight: bold; z-index: 9999; }
-        .close-x { position: absolute; top: 25px; left: 25px; font-size: 30px; color: #fff; z-index: 9999; background: rgba(0,0,0,0.5); width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 50%; cursor: pointer; }
+        .folder-item img { max-width: 95%; max-height: 85%; object-fit: contain; }
+        .download-btn { position: absolute; bottom: 30px; background: #fff; color: #000; padding: 12px 25px; border-radius: 25px; border: none; font-weight: bold; cursor: pointer; }
+        .close-btn { position: absolute; top: 20px; left: 20px; color: #fff; font-size: 30px; cursor: pointer; z-index: 1100; background: rgba(0,0,0,0.5); width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
@@ -28,40 +28,42 @@
     <div id="gallery"></div>
 
     <div id="photoModal">
-        <div class="close-x" onclick="closeModal()">×</div>
+        <div class="close-btn" onclick="closeModal()">×</div>
         <div id="modalContent"></div>
     </div>
 
     <script>
         const GH_USER = "sirnichemotivation-rgb";
         const GH_REPO = "justpose-storage";
-        // Gamit ang iyong bagong token para sa 5,000 requests per hour
+        // GAMITIN ANG IYONG TOKEN DITO
         const GH_TOKEN = "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"; 
         const eventId = new URLSearchParams(window.location.search).get('event');
 
         async function loadGallery() {
             const gal = document.getElementById('gallery');
             if (!eventId) {
-                gal.innerHTML = "<h2 style='text-align:center'>Missing Event ID sa URL.</h2>";
+                gal.innerHTML = "<h2 style='text-align:center; margin-top:50px;'>Missing Event ID.</h2>";
                 return;
             }
 
             try {
-                // Inalis ang "/Events/" sa path para tumugma sa repo mo
+                // FETCH NG MAIN EVENT FOLDER
                 const res = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${eventId}`, {
-                    headers: { "Authorization": `token ${GH_TOKEN}` }
+                    headers: { "Authorization": `Bearer ${GH_TOKEN}` }
                 });
 
                 if (!res.ok) throw new Error("Folder not found");
                 const sessions = await res.json();
-                sessions.reverse(); 
-
+                
+                // Sort sessions (latest first)
+                sessions.sort((a, b) => b.name.localeCompare(a.name, undefined, {numeric: true}));
                 gal.innerHTML = "";
 
                 for (let s of sessions) {
                     if (s.type === 'dir') {
+                        // FETCH NG BAWAT SESSION
                         const sRes = await fetch(s.url, {
-                            headers: { "Authorization": `token ${GH_TOKEN}` }
+                            headers: { "Authorization": `Bearer ${GH_TOKEN}` }
                         });
                         const files = await sRes.json();
                         const photos = files.filter(f => f.name.toLowerCase().endsWith('.jpg'));
@@ -76,7 +78,8 @@
                     }
                 }
             } catch (e) {
-                gal.innerHTML = `<div style="text-align:center; padding:50px;">Waiting for photos to upload to "${eventId}"...</div>`;
+                console.error(e);
+                gal.innerHTML = `<div style="text-align:center; padding:50px;">Waiting for photos... (Check Console if Error persists)</div>`;
             }
         }
 
@@ -89,7 +92,10 @@
             photos.forEach(p => {
                 const div = document.createElement('div');
                 div.className = 'folder-item';
-                div.innerHTML = `<img src="${p.download_url}"><button class="mini-download-btn" onclick="window.open('${p.download_url}')">↓</button>`;
+                div.innerHTML = `
+                    <img src="${p.download_url}">
+                    <button class="download-btn" onclick="window.open('${p.download_url}')">DOWNLOAD</button>
+                `;
                 cont.appendChild(div);
             });
 
