@@ -3,15 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Justpose Gallery</title>
-    <link rel="stylesheet" href="style.css">
+    <title>JUSTPOSE GALLERY</title>
+    <style>
+        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 10px; overflow-x: hidden; }
+        
+        header { display: flex; justify-content: center; align-items: center; padding: 20px 0; background: #000; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #111; }
+        .main-logo { height: 70px; width: auto; object-fit: contain; }
+
+        #gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; padding-top: 20px; padding-bottom: 50px; }
+        .img-card { background: #111; border-radius: 12px; overflow: hidden; height: 190px; border: 1px solid #222; transition: transform 0.2s; }
+        .img-card img { width: 100%; height: 100%; object-fit: cover; }
+
+        #photoModal { display: none; position: fixed; inset: 0; background: #000; z-index: 1000; flex-direction: column; }
+        #modalContent { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; width: 100vw; height: 100vh; -webkit-overflow-scrolling: touch; }
+        .folder-item { min-width: 100vw; height: 100vh; scroll-snap-align: center; display: flex; justify-content: center; align-items: center; position: relative; }
+        .folder-item img { max-width: 95%; max-height: 80%; object-fit: contain; border-radius: 4px; }
+
+        .mini-download-btn { position: absolute; bottom: 40px; right: 30px; background: #fff; color: #000; width: 55px; height: 55px; border-radius: 50%; border: none; font-size: 24px; font-weight: bold; z-index: 9999; }
+        .close-x { position: absolute; top: 25px; left: 25px; font-size: 30px; color: #fff; z-index: 9999; background: rgba(0,0,0,0.5); width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 50%; cursor: pointer; }
+    </style>
 </head>
 <body>
 
-    <header class="gallery-header">
-        <img src="logo.png" alt="Justpose Logo" class="main-logo">
+    <header>
+        <img src="logo.png" alt="JUSTPOSE GALLERY" class="main-logo">
     </header>
-    
+
     <div id="gallery"></div>
 
     <div id="photoModal">
@@ -19,6 +36,85 @@
         <div id="modalContent"></div>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+        const GH_USER = "sirnichemotivation-rgb";
+        const GH_REPO = "justpose-storage";
+        // ITO ANG SOLUSYON SA 403 ERROR:
+        const GH_TOKEN = "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"; 
+        const eventId = new URLSearchParams(window.location.search).get('event');
+
+        async function loadGallery() {
+            if (!eventId) return;
+            const gal = document.getElementById('gallery');
+
+            try {
+                // Binago ang path: tinanggal ang "/Events/"
+                const res = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${eventId}`, {
+                    headers: { "Authorization": `token ${GH_TOKEN}` }
+                });
+
+                if (!res.ok) throw new Error("Folder not found");
+                const sessions = await res.json();
+                sessions.reverse(); 
+
+                gal.innerHTML = "";
+
+                for (let s of sessions) {
+                    if (s.type === 'dir') {
+                        const sRes = await fetch(s.url, {
+                            headers: { "Authorization": `token ${GH_TOKEN}` }
+                        });
+                        const files = await sRes.json();
+                        const photos = files.filter(f => f.name.toLowerCase().endsWith('.jpg'));
+
+                        photos.forEach((p, index) => {
+                            const card = document.createElement('div');
+                            card.className = "img-card";
+                            card.innerHTML = `<img src="${p.download_url}" loading="lazy">`;
+                            card.onclick = () => openModal(photos, index);
+                            gal.appendChild(card);
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+                gal.innerHTML = `<div style="text-align:center; padding:50px;">Waiting for photos to upload...</div>`;
+            }
+        }
+
+        function openModal(photos, startIndex) {
+            const modal = document.getElementById('photoModal');
+            const cont = document.getElementById('modalContent');
+            modal.style.display = 'flex';
+            cont.innerHTML = "";
+
+            photos.forEach(p => {
+                const div = document.createElement('div');
+                div.className = 'folder-item';
+                div.innerHTML = `
+                    <img src="${p.download_url}">
+                    <button class="mini-download-btn" onclick="downloadFile('${p.download_url}')">↓</button>
+                `;
+                cont.appendChild(div);
+            });
+
+            setTimeout(() => {
+                cont.scrollLeft = window.innerWidth * startIndex;
+            }, 50);
+        }
+
+        function closeModal() { document.getElementById('photoModal').style.display = 'none'; }
+
+        function downloadFile(url) {
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "Justpose_Photo.jpg";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        window.onload = loadGallery;
+    </script>
 </body>
 </html>
