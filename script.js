@@ -15,6 +15,7 @@ if (eventId) {
         .then(r => r.json())
         .then(folders => {
             gallery.innerHTML = "";
+            // I-sort ang folders (timestamps) para latest ang una
             folders.sort((a, b) => b.name.localeCompare(a.name));
 
             folders.forEach(folder => {
@@ -24,7 +25,7 @@ if (eventId) {
                     card.className = "img-card"; 
                     card.onclick = () => openFolder(sessId);
                     
-                    // Thumbnail: Kinukuha sa loob ng /Prints/ folder
+                    // Thumbnail: Hanapin ang image sa loob ng /Prints/ folder
                     fetch(`${apiURL}/${sessId}/Prints`)
                         .then(res => res.json())
                         .then(files => {
@@ -40,21 +41,22 @@ if (eventId) {
         });
 }
 
-// 2. OPEN FOLDER (Swipe logic para sa lahat ng media)
+// 2. OPEN FOLDER (Swipe logic para sa Singles, Prints, at MP4)
 async function openFolder(sessId) {
     modal.style.display = "flex"; 
-    modalContent.innerHTML = "<div style='color:white; width:100vw; text-align:center;'>Loading...</div>";
+    modalContent.innerHTML = "<div style='color:white; width:100vw; text-align:center;'>Loading session...</div>";
 
     try {
         const subFolders = ['Prints', 'Singles', 'Animated'];
         let allFiles = [];
 
+        // Isa-isang titingnan ang folders sa GitHub
         for (const sub of subFolders) {
             try {
                 const r = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/Events/${eventId}/${sessId}/${sub}`);
                 const data = await r.json();
                 if (Array.isArray(data)) allFiles = allFiles.concat(data);
-            } catch (e) { }
+            } catch (e) { /* folder not found, okay lang */ }
         }
 
         modalContent.innerHTML = "";
@@ -65,12 +67,12 @@ async function openFolder(sessId) {
             
             if (isVid) {
                 div.innerHTML = `
-                    <a href="${file.download_url}" class="mini-download-btn" download>↓</a>
+                    <a href="${file.download_url}" class="mini-download-btn" target="_blank" download>↓</a>
                     <video src="${file.download_url}" style="max-width:95%; max-height:85%;" controls autoplay loop playsinline></video>
                 `;
             } else {
                 div.innerHTML = `
-                    <a href="${file.download_url}" class="mini-download-btn" download>↓</a>
+                    <a href="${file.download_url}" class="mini-download-btn" target="_blank" download>↓</a>
                     <img src="${file.download_url}">
                 `;
             }
