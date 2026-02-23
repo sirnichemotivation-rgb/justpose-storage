@@ -14,37 +14,44 @@ async function loadGallery() {
     }
 
     try {
-        // FIX: Inalis ang 'Events/' dahil base sa screenshot mo, diretso ang event folder
-        const res = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${eventId}?t=${Date.now()}`);
-        if (!res.ok) throw new Error("No sessions");
+        // FIX: Tinanggal ang '/Events/' dahil base sa screenshot mo, diretso ang folders sa repo
+        const apiUrl = `https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${eventId}?t=${Date.now()}`;
+        const res = await fetch(apiUrl);
         
-        const folders = await res.json();
+        if (!res.ok) throw new Error("Folder not found");
+        
+        const sessions = await res.json();
         gallery.innerHTML = "";
         
-        // Sorting: Newest Session sa taas
-        folders.sort((a, b) => b.name.localeCompare(a.name, undefined, {numeric: true}));
+        // Isort ang sessions (Newest first)
+        sessions.sort((a, b) => b.name.localeCompare(a.name, undefined, {numeric: true}));
 
-        for (const folder of folders) {
-            if (folder.type === 'dir') {
+        for (const session of sessions) {
+            if (session.type === 'dir') {
                 const card = document.createElement('div');
                 card.className = "img-card";
-                card.onclick = () => openSession(folder.name);
+                card.onclick = () => openSession(session.name);
                 
-                // Thumbnail: Kuhanin ang unang file sa loob ng session folder
-                const fRes = await fetch(folder.url);
+                // Kuhanin ang thumbnail mula sa loob ng session folder
+                const fRes = await fetch(session.url);
                 const files = await fRes.json();
                 
-                // Hanapin ang unang valid image na hindi _3600.jpg
-                const thumb = files.find(f => f.name.toLowerCase().endsWith('.jpg') && !f.name.includes('_3600'));
+                // Hanapin ang unang file na hindi _3600.jpg at hindi MP4
+                const thumbFile = files.find(f => 
+                    f.name.toLowerCase().endsWith('.jpg') && 
+                    !f.name.includes('_3600')
+                );
                 
-                if (thumb) {
-                    card.innerHTML = `<img src="${thumb.download_url}" loading="lazy">`;
+                if (thumbFile) {
+                    card.innerHTML = `<img src="${thumbFile.download_url}" loading="lazy">`;
+                } else {
+                    card.innerHTML = `<div style="padding:20px; font-size:10px; color:#444;">No Preview</div>`;
                 }
                 gallery.appendChild(card);
             }
         }
     } catch (e) {
-        gallery.innerHTML = "<p style='text-align:center;'>Waiting for photos to sync...</p>";
+        gallery.innerHTML = `<p style='text-align:center;'>Event folder "${eventId}" not found or repo is empty.</p>`;
     }
 }
 
@@ -53,14 +60,14 @@ async function openSession(sessId) {
     modalContent.innerHTML = "<div style='color:white;width:100%;text-align:center;margin-top:50px;'>Loading Photos...</div>";
 
     try {
-        // Fetch files directly from the session folder
+        // Fetch files directly from the session folder path
         const r = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${eventId}/${sessId}`);
         const media = await r.json();
         
         modalContent.innerHTML = "";
         media.forEach(file => {
-            // Filter: Ipakita lahat maliban sa _3600.jpg at MP4
-            if(!file.name.toLowerCase().includes('_3600') && !file.name.toLowerCase().endsWith('.mp4')) {
+            // Filter: Ipakita ang lahat maliban sa _3600.jpg
+            if(!file.name.includes('_3600') && file.name.toLowerCase().endsWith('.jpg')) {
                 const div = document.createElement('div');
                 div.className = "folder-item";
                 div.innerHTML = `
@@ -71,7 +78,7 @@ async function openSession(sessId) {
             }
         });
     } catch (err) {
-        modalContent.innerHTML = "<div style='color:white;text-align:center;'>Error loading photos.</div>";
+        modalContent.innerHTML = "<div style='color:white;text-align:center;'>Error loading session photos.</div>";
     }
 }
 
@@ -87,5 +94,8 @@ async function forceDownload(url, filename) {
 }
 
 function closeModal() { modal.style.display = "none"; }
+
+// Initial load
 loadGallery();
+// Auto refresh every 20 seconds
 setInterval(loadGallery, 20000);
