@@ -5,27 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Justpose Gallery</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        /* FIX: Siguraduhin na ang download button ay laging nasa top-right ng screen */
-        .fixed-download {
-            position: fixed; top: 20px; right: 20px; 
-            background: rgba(255,255,255,0.8); color: #000;
-            width: 45px; height: 45px; border-radius: 50%;
-            display: flex; justify-content: center; align-items: center; 
-            text-decoration: none; font-weight: bold; font-size: 22px; z-index: 5000;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
-        }
-        video { max-width: 95%; max-height: 85%; border-radius: 10px; }
-    </style>
 </head>
 <body>
-    <header><h1 id="mainTitle">JUSTPOSE GALLERY</h1></header>
-    
+    <header><h1>JUSTPOSE GALLERY</h1></header>
     <div id="gallery"></div>
 
     <div id="photoModal">
         <div class="close-x" onclick="closeModal()">×</div>
-        <a id="mainDownloadBtn" href="#" class="fixed-download" download>↓</a>
+        <a id="fixedDL" href="#" class="mini-download-btn" download>↓</a>
         <div id="modalContent"></div>
     </div>
 
@@ -35,7 +22,7 @@
         const gallery = document.getElementById('gallery');
         const modal = document.getElementById('photoModal');
         const modalContent = document.getElementById('modalContent');
-        const dlBtn = document.getElementById('mainDownloadBtn');
+        const fixedDL = document.getElementById('fixedDL');
 
         if (eventId) {
             const fbURL = `https://justposegallery-default-rtdb.asia-southeast1.firebasedatabase.app/events/${eventId}.json`;
@@ -49,11 +36,11 @@
                         photoArray.forEach(item => {
                             const card = document.createElement('div');
                             card.className = "img-card";
-                            card.onclick = () => openFolder(item.url);
+                            card.onclick = () => openModal(item.url);
                             
-                            // Check kung MP4 o Image
+                            // Check kung Video o Image ang thumbnail
                             if (item.url.toLowerCase().endsWith('.mp4')) {
-                                card.innerHTML = `<video muted loop autoplay src="${item.url}" style="width:100%; height:180px; object-fit:cover;"></video>`;
+                                card.innerHTML = `<video src="${item.url}" muted loop autoplay></video>`;
                             } else {
                                 card.innerHTML = `<img src="${item.url}">`;
                             }
@@ -63,16 +50,16 @@
                 });
             }
 
-            function openFolder(url) {
+            function openModal(url) {
                 modal.style.display = "flex";
                 modalContent.innerHTML = "";
-                dlBtn.href = url; // I-set ang download link sa current file
+                fixedDL.href = url; // I-set ang download link
 
                 const div = document.createElement('div');
-                div.className = "folder-item"; // Gagamit ng scroll-snap-align: center mula sa CSS mo
+                div.className = "folder-item";
                 
                 if (url.toLowerCase().endsWith('.mp4')) {
-                    div.innerHTML = `<video controls autoplay loop src="${url}"></video>`;
+                    div.innerHTML = `<video src="${url}" controls autoplay loop></video>`;
                 } else {
                     div.innerHTML = `<img src="${url}">`;
                 }
@@ -83,7 +70,7 @@
             function closeModal() { modal.style.display = "none"; }
 
             loadPhotos();
-            setInterval(loadPhotos, 5000);
+            setInterval(loadPhotos, 5000); // Auto-refresh every 5s
         }
     </script>
 </body>
