@@ -5,44 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>JUSTPOSE GALLERY</title>
     <style>
-        /* UI DESIGN BASE SA SCREENSHOTS MO */
-        body { background: #000; color: #fff; font-family: -apple-system, sans-serif; margin: 0; padding: 0; overflow-x: hidden; }
-        
-        header { 
-            display: flex; justify-content: center; align-items: center; 
-            padding: 20px 0; background: #000; position: sticky; top: 0; 
-            z-index: 100; border-bottom: 1px solid #111; 
-        }
+        /* UI DESIGN MULA SA IYONG SCREENSHOTS */
+        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 0; overflow-x: hidden; }
+        header { display: flex; justify-content: center; align-items: center; padding: 20px 0; background: #000; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #111; }
         .main-logo { height: 60px; width: auto; object-fit: contain; }
 
-        #gallery { 
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
-            gap: 12px; padding: 15px; padding-bottom: 50px;
-        }
-        .img-card { 
-            background: #111; border-radius: 12px; overflow: hidden; 
-            height: 190px; border: 1px solid #222; position: relative;
-        }
-        .img-card img { width: 100%; height: 100%; object-fit: cover; }
+        #gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; padding: 15px; }
+        .img-card { background: #111; border-radius: 12px; overflow: hidden; height: 190px; border: 1px solid #222; }
+        .img-card img { width: 100%; height: 100%; object-fit: cover; cursor: pointer; }
 
-        /* FULLSCREEN MODAL */
+        /* MODAL PARA SA SWIPE AT DOWNLOAD */
         #photoModal { display: none; position: fixed; inset: 0; background: #000; z-index: 1000; flex-direction: column; }
         #modalContent { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; width: 100vw; height: 100vh; }
-        .folder-item { 
-            min-width: 100vw; height: 100vh; scroll-snap-align: center; 
-            display: flex; justify-content: center; align-items: center; position: relative; 
-        }
+        .folder-item { min-width: 100vw; height: 100vh; scroll-snap-align: center; display: flex; justify-content: center; align-items: center; position: relative; }
         .folder-item img { max-width: 95%; max-height: 80%; object-fit: contain; }
 
-        .download-btn { 
-            position: absolute; bottom: 40px; right: 30px; background: #fff; color: #000; 
-            width: 55px; height: 55px; border-radius: 50%; border: none; font-size: 24px; font-weight: bold; 
-        }
-        .close-x { 
-            position: absolute; top: 25px; left: 25px; font-size: 30px; color: #fff; 
-            z-index: 9999; background: rgba(0,0,0,0.5); width: 45px; height: 45px; 
-            display: flex; align-items: center; justify-content: center; border-radius: 50%;
-        }
+        .download-btn { position: absolute; bottom: 40px; right: 30px; background: #fff; color: #000; width: 55px; height: 55px; border-radius: 50%; border: none; font-size: 24px; font-weight: bold; cursor: pointer; }
+        .close-x { position: absolute; top: 25px; left: 25px; font-size: 30px; color: #fff; z-index: 9999; background: rgba(0,0,0,0.5); width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 50%; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -50,7 +29,7 @@
     <header>
         <img src="logo.png" alt="JUSTPOSE GALLERY" class="main-logo">
     </header>
-    
+
     <div id="gallery"></div>
 
     <div id="photoModal">
@@ -62,9 +41,8 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getStorage, ref, listAll, getDownloadURL, getMetadata } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-        // PALITAN MO ITO NG IYONG FIREBASE PROJECT ID
         const firebaseConfig = {
-            storageBucket: "your-project-id.appspot.com" 
+            storageBucket: "justposegallery.appspot.com"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -73,7 +51,7 @@
 
         async function loadGallery() {
             if (!eventId) {
-                document.getElementById('gallery').innerHTML = "<h2 style='text-align:center'>Missing Event ID</h2>";
+                document.getElementById('gallery').innerHTML = "<p style='text-align:center'>No Event Selected</p>";
                 return;
             }
 
@@ -83,27 +61,27 @@
             try {
                 const res = await listAll(listRef);
                 
-                // Kunin lahat ng URLs at Metadata para ma-sort natin by date
+                // Kunin ang lahat ng photo details
                 const items = await Promise.all(res.items.map(async (item) => {
                     const url = await getDownloadURL(item);
                     const meta = await getMetadata(item);
                     return { url, time: new Date(meta.timeCreated) };
                 }));
 
-                // Sort: Pinakabagong upload sa taas
+                // Sort: Latest photos first
                 items.sort((a, b) => b.time - a.time);
 
                 gal.innerHTML = "";
                 items.forEach((item, index) => {
                     const card = document.createElement('div');
-                    card.className = 'img-card';
+                    card.className = "img-card";
                     card.innerHTML = `<img src="${item.url}" loading="lazy">`;
                     card.onclick = () => openModal(items, index);
                     gal.appendChild(card);
                 });
             } catch (e) {
                 console.error(e);
-                gal.innerHTML = "<h2 style='text-align:center'>No photos found yet.</h2>";
+                gal.innerHTML = "<p style='text-align:center'>Loading photos...</p>";
             }
         }
 
@@ -125,10 +103,7 @@
             cont.scrollLeft = window.innerWidth * startIndex;
         }
 
-        window.closeModal = function() {
-            document.getElementById('photoModal').style.display = 'none';
-        }
-
+        window.closeModal = function() { document.getElementById('photoModal').style.display = 'none'; }
         window.onload = loadGallery;
     </script>
 </body>
