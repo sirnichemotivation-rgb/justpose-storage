@@ -7,6 +7,20 @@ body {
     overflow-x: hidden;
 }
 
+/* LOGO & HEADER */
+.gallery-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px 0;
+    background: #000;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid #111;
+}
+.main-logo { height: 60px; width: auto; object-fit: contain; }
+
 /* GALLERY GRID */
 #gallery { 
     display: grid; 
@@ -34,7 +48,6 @@ body {
     z-index: 1000; 
     flex-direction: column; 
 }
-
 #modalContent {
     display: flex !important;
     flex-direction: row !important;
@@ -42,12 +55,8 @@ body {
     scroll-snap-type: x mandatory;
     width: 100vw;
     height: 100vh;
-    -webkit-overflow-scrolling: touch;
 }
-
-/* Hide Scrollbar */
 #modalContent::-webkit-scrollbar { display: none; }
-
 .folder-item {
     min-width: 100vw !important;
     height: 100vh;
@@ -56,45 +65,18 @@ body {
     justify-content: center; 
     align-items: center;
     position: relative;
-    background: #000;
 }
-
-.folder-item img { 
-    max-width: 95%; 
-    max-height: 80%; 
-    object-fit: contain; 
-    border-radius: 4px;
-}
+.folder-item img { max-width: 95%; max-height: 80%; object-fit: contain; }
 
 /* BUTTONS */
 .mini-download-btn {
-    position: absolute; 
-    bottom: 40px; 
-    right: 30px; 
-    background: #fff; 
-    color: #000;
-    width: 55px; 
-    height: 55px; 
-    border-radius: 50%; 
-    border: none; 
-    font-size: 24px; 
-    font-weight: bold; 
-    z-index: 9999;
-    box-shadow: 0 4px 15px rgba(255,255,255,0.2);
+    position: absolute; bottom: 40px; right: 30px; 
+    background: #fff; color: #000; width: 55px; height: 55px; 
+    border-radius: 50%; border: none; font-size: 24px; font-weight: bold; 
+    z-index: 9999; box-shadow: 0 4px 15px rgba(255,255,255,0.2);
 }
-
 .close-x { 
-    position: absolute; 
-    top: 25px; 
-    left: 25px; 
-    font-size: 30px; 
-    color: #fff; 
-    z-index: 9999; 
-    background: rgba(0,0,0,0.5);
-    width: 45px;
-    height: 45px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
+    position: absolute; top: 25px; left: 25px; font-size: 30px; color: #fff; 
+    z-index: 9999; background: rgba(0,0,0,0.5); width: 45px; height: 45px; 
+    display: flex; align-items: center; justify-content: center; border-radius: 50%;
 }
