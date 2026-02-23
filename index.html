@@ -4,92 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>JUSTPOSE LIVE GALLERY</title>
-    <style>
-        * { box-sizing: border-box; }
-        body { background: #000; color: #fff; font-family: -apple-system, sans-serif; margin: 0; padding: 15px; }
-        h2 { text-align: center; color: #fff; font-size: 1.2rem; margin-bottom: 20px; }
-        
-        /* Main Grid */
-        #gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
-        .card { background: #111; border-radius: 15px; overflow: hidden; height: 180px; border: 1px solid #222; cursor: pointer; position: relative; }
-        .card img { width: 100%; height: 100%; object-fit: cover; }
-        
-        /* Modal Style */
-        #modal { display: none; position: fixed; inset: 0; background: #000; z-index: 999; flex-direction: column; }
-        #content { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; width: 100vw; height: 100vh; }
-        .slide { min-width: 100vw; height: 100vh; scroll-snap-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .slide img { max-width: 95%; max-height: 70%; border-radius: 10px; box-shadow: 0 0 30px rgba(255,255,255,0.1); }
-        
-        /* Buttons */
-        .close { position: absolute; top: 25px; left: 25px; font-size: 32px; z-index: 1001; background: rgba(0,0,0,0.5); width: 45px; height: 45px; border-radius: 50%; text-align: center; line-height: 45px; }
-        .dl-btn { margin-top: 20px; background: #fff; color: #000; padding: 14px 35px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 14px; }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h2>JUSTPOSE LIVE GALLERY</h2>
-    <div id="gallery"></div>
 
-    <div id="modal">
-        <div class="close" onclick="closeM()">✕</div>
-        <div id="content"></div>
+    <header style="padding: 20px 10px; text-align: center;">
+        <h2 style="margin: 0; font-weight: 900; letter-spacing: 1px;">JUSTPOSE GALLERY</h2>
+    </header>
+
+    <main id="gallery"></main>
+
+    <div id="photoModal">
+        <span class="close-x" onclick="closeModal()">✕</span>
+        <div id="modalContent">
+            </div>
     </div>
 
-    <script>
-        const USER = "sirnichemotivation-rgb";
-        const REPO = "justpose-storage";
-        const eventId = new URLSearchParams(window.location.search).get('event');
+    <script src="script.js"></script>
 
-        async function loadG() {
-            if (!eventId) return;
-            try {
-                // Fetch sessions from Events/EventID folder
-                const r = await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/Events/${eventId}?t=${Date.now()}`);
-                const data = await r.json();
-                const gal = document.getElementById('gallery');
-                gal.innerHTML = "";
-                
-                // Sort sessions: Newest first
-                data.sort((a,b) => b.name.localeCompare(a.name, undefined, {numeric:true}));
-
-                for (let s of data) {
-                    if (s.type === 'dir') {
-                        let div = document.createElement('div');
-                        div.className = "card";
-                        div.onclick = () => openS(s.name);
-                        
-                        // Kukunin ang unang file sa loob ng session folder bilang Thumbnail (Print)
-                        const fr = await fetch(s.url);
-                        const files = await fr.json();
-                        if (files[0]) div.innerHTML = `<img src="${files[0].download_url}">`;
-                        gal.appendChild(div);
-                    }
-                }
-            } catch (e) { document.getElementById('gallery').innerHTML = "Gallery is empty..."; }
-        }
-
-        async function openS(sid) {
-            const m = document.getElementById('modal');
-            const c = document.getElementById('content');
-            m.style.display = "flex";
-            c.innerHTML = "<div style='padding:50px'>Loading Photos...</div>";
-            
-            try {
-                const r = await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/Events/${eventId}/${sid}`);
-                const files = await r.json();
-                c.innerHTML = "";
-                files.forEach(f => {
-                    let s = document.createElement('div');
-                    s.className = "slide";
-                    s.innerHTML = `<img src="${f.download_url}"><a href="${f.download_url}" download class="dl-btn">SAVE PHOTO</a>`;
-                    c.appendChild(s);
-                });
-            } catch(e) {}
-        }
-
-        function closeM() { document.getElementById('modal').style.display = "none"; }
-        
-        loadG();
-        setInterval(loadG, 15000); // Auto-refresh every 15 seconds
-    </script>
 </body>
 </html>
