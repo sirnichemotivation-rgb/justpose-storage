@@ -14,8 +14,8 @@ async function loadGallery() {
     }
 
     try {
-        // Direkta sa Event ID folder dahil tinanggal natin ang 'Events/' prefix sa Python
-        const res = await fetch(`https://api.github.com/repos/${GH_USER}/${REPO}/contents/Events/${eventId}?t=${Date.now()}`);
+        // FIX: Inalis ang 'Events/' dahil base sa screenshot mo, diretso ang event folder
+        const res = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${eventId}?t=${Date.now()}`);
         if (!res.ok) throw new Error("No sessions");
         
         const folders = await res.json();
@@ -30,12 +30,15 @@ async function loadGallery() {
                 card.className = "img-card";
                 card.onclick = () => openSession(folder.name);
                 
-                // Thumbnail: Kukunin ang unang file sa loob ng session folder (yung Print)
+                // Thumbnail: Kuhanin ang unang file sa loob ng session folder
                 const fRes = await fetch(folder.url);
                 const files = await fRes.json();
                 
-                if (files[0]) {
-                    card.innerHTML = `<img src="${files[0].download_url}" loading="lazy">`;
+                // Hanapin ang unang valid image na hindi _3600.jpg
+                const thumb = files.find(f => f.name.toLowerCase().endsWith('.jpg') && !f.name.includes('_3600'));
+                
+                if (thumb) {
+                    card.innerHTML = `<img src="${thumb.download_url}" loading="lazy">`;
                 }
                 gallery.appendChild(card);
             }
@@ -50,13 +53,14 @@ async function openSession(sessId) {
     modalContent.innerHTML = "<div style='color:white;width:100%;text-align:center;margin-top:50px;'>Loading Photos...</div>";
 
     try {
-        const r = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/Events/${eventId}/${sessId}`);
+        // Fetch files directly from the session folder
+        const r = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${eventId}/${sessId}`);
         const media = await r.json();
         
         modalContent.innerHTML = "";
         media.forEach(file => {
-            // Filter: Siguraduhin na JPG/PNG lang at walang _3600.jpg
-            if(!file.name.toLowerCase().endsWith('_3600.jpg')) {
+            // Filter: Ipakita lahat maliban sa _3600.jpg at MP4
+            if(!file.name.toLowerCase().includes('_3600') && !file.name.toLowerCase().endsWith('.mp4')) {
                 const div = document.createElement('div');
                 div.className = "folder-item";
                 div.innerHTML = `
@@ -84,5 +88,4 @@ async function forceDownload(url, filename) {
 
 function closeModal() { modal.style.display = "none"; }
 loadGallery();
-// Auto-refresh bawat 20 seconds para sa Live
 setInterval(loadGallery, 20000);
