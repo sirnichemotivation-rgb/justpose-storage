@@ -14,58 +14,61 @@ async function loadGallery() {
     }
 
     try {
-        // FIX: Inalis ang 'Events/' dahil wala ito sa repo mo
-        const res = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${eventId}`);
+        // Direkta sa Event ID folder dahil tinanggal natin ang 'Events/' prefix sa Python
+        const res = await fetch(`https://api.github.com/repos/${GH_USER}/${REPO}/contents/Events/${eventId}?t=${Date.now()}`);
         if (!res.ok) throw new Error("No sessions");
         
         const folders = await res.json();
         gallery.innerHTML = "";
+        
+        // Sorting: Newest Session sa taas
         folders.sort((a, b) => b.name.localeCompare(a.name, undefined, {numeric: true}));
 
         for (const folder of folders) {
             if (folder.type === 'dir') {
-                const sessId = folder.name;
                 const card = document.createElement('div');
                 card.className = "img-card";
-                card.onclick = () => openSession(sessId);
+                card.onclick = () => openSession(folder.name);
                 
-                const pRes = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${eventId}/${sessId}/Prints`);
-                const prints = await pRes.json();
-                if (prints[0]) card.innerHTML = `<img src="${prints[0].download_url}">`;
+                // Thumbnail: Kukunin ang unang file sa loob ng session folder (yung Print)
+                const fRes = await fetch(folder.url);
+                const files = await fRes.json();
                 
+                if (files[0]) {
+                    card.innerHTML = `<img src="${files[0].download_url}" loading="lazy">`;
+                }
                 gallery.appendChild(card);
             }
         }
     } catch (e) {
-        gallery.innerHTML = "<p style='text-align:center;'>No sessions found. Mag-wait ng 1 min para mag-sync ang GitHub.</p>";
+        gallery.innerHTML = "<p style='text-align:center;'>Waiting for photos to sync...</p>";
     }
 }
 
 async function openSession(sessId) {
     modal.style.display = "flex";
-    modalContent.innerHTML = "<div style='color:white;width:100%;text-align:center;'>Loading...</div>";
+    modalContent.innerHTML = "<div style='color:white;width:100%;text-align:center;margin-top:50px;'>Loading Photos...</div>";
 
-    const subs = ['Prints', 'Singles', 'Animated'];
-    let media = [];
-    for (const s of subs) {
-        try {
-            const r = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${eventId}/${sessId}/${s}`);
-            const data = await r.json();
-            if (Array.isArray(data)) media = media.concat(data);
-        } catch (err) {}
+    try {
+        const r = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/Events/${eventId}/${sessId}`);
+        const media = await r.json();
+        
+        modalContent.innerHTML = "";
+        media.forEach(file => {
+            // Filter: Siguraduhin na JPG/PNG lang at walang _3600.jpg
+            if(!file.name.toLowerCase().endsWith('_3600.jpg')) {
+                const div = document.createElement('div');
+                div.className = "folder-item";
+                div.innerHTML = `
+                    <button onclick="forceDownload('${file.download_url}', '${file.name}')" class="mini-download-btn">↓</button>
+                    <img src="${file.download_url}">
+                `;
+                modalContent.appendChild(div);
+            }
+        });
+    } catch (err) {
+        modalContent.innerHTML = "<div style='color:white;text-align:center;'>Error loading photos.</div>";
     }
-
-    modalContent.innerHTML = "";
-    media.forEach(file => {
-        const div = document.createElement('div');
-        div.className = "folder-item";
-        const isVid = file.name.toLowerCase().endsWith('.mp4');
-        div.innerHTML = `
-            <button onclick="forceDownload('${file.download_url}', '${file.name}')" class="mini-download-btn">↓</button>
-            ${isVid ? `<video src="${file.download_url}" controls autoplay loop playsinline></video>` : `<img src="${file.download_url}">`}
-        `;
-        modalContent.appendChild(div);
-    });
 }
 
 async function forceDownload(url, filename) {
@@ -74,8 +77,12 @@ async function forceDownload(url, filename) {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = filename;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
 }
 
 function closeModal() { modal.style.display = "none"; }
 loadGallery();
+// Auto-refresh bawat 20 seconds para sa Live
+setInterval(loadGallery, 20000);
