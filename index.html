@@ -6,7 +6,7 @@
     <title>Justpose Gallery</title>
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: sans-serif; }
-        header { padding: 20px; text-align: center; background: #111; border-bottom: 2px solid #222; position: sticky; top: 0; z-index: 100; }
+        header { padding: 20px; text-align: center; background: #111; border-bottom: 2px solid #222; }
         #gallery { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 10px; }
         .img-card { background: #111; border-radius: 10px; overflow: hidden; aspect-ratio: 1/1; cursor: pointer; border: 1px solid #333; }
         .img-card img { width: 100%; height: 100%; object-fit: cover; }
@@ -37,8 +37,11 @@
                 if (!data) return;
                 const gal = document.getElementById('gallery');
                 gal.innerHTML = "";
+                
+                // DATA ay naka-group by Session ID. Loop natin per session.
                 Object.keys(data).reverse().forEach(sid => {
                     const files = Object.values(data[sid]);
+                    // Ang cover card ay yung file na nasa "/Prints/" folder
                     const print = files.find(f => f.url.includes('/Prints/')) || files[0];
                     const card = document.createElement('div');
                     card.className = "img-card";
@@ -47,10 +50,12 @@
                     gal.appendChild(card);
                 });
             }
+
             function openModal(files) {
                 const m = document.getElementById('modal');
                 const c = document.getElementById('modalContent');
                 m.style.display = "block"; c.innerHTML = "";
+                // Sort para Print ang laging unang slide
                 files.sort((a,b) => a.url.includes('/Prints/') ? -1 : 1);
                 files.forEach(f => {
                     const div = document.createElement('div'); div.className = "slide";
