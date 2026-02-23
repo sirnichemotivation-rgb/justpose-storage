@@ -3,37 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JUSTPOSE LIVE GALLERY</title>
+    <title>JUSTPOSE GALLERY</title>
     <style>
         body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 10px; }
-        header { text-align: center; padding: 10px; border-bottom: 1px solid #222; margin-bottom: 20px; }
-        .live-dot { color: #0f0; animation: blink 1s infinite; font-size: 12px; }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-        
-        #gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
-        .img-card { background: #111; border-radius: 12px; overflow: hidden; height: 180px; cursor: pointer; border: 1px solid #333; }
+        #gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+        .img-card { background: #111; border-radius: 8px; overflow: hidden; height: 180px; border: 1px solid #222; }
         .img-card img { width: 100%; height: 100%; object-fit: cover; }
-
         #photoModal { display: none; position: fixed; inset: 0; background: #000; z-index: 1000; flex-direction: column; }
         #modalContent { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; width: 100vw; height: 100vh; }
-        #modalContent::-webkit-scrollbar { display: none; }
-
         .folder-item { min-width: 100vw; height: 100vh; scroll-snap-align: center; display: flex; justify-content: center; align-items: center; position: relative; }
-        .folder-item img, .folder-item video { max-width: 95%; max-height: 80%; border-radius: 8px; }
-
-        .dl-btn { position: absolute; top: 25px; right: 20px; background: #fff; color: #000; padding: 10px 20px; border-radius: 20px; font-weight: bold; text-decoration: none; z-index: 2001; }
-        .close-x { position: absolute; top: 20px; left: 20px; font-size: 40px; color: #fff; z-index: 2001; cursor: pointer; }
+        .folder-item img, .folder-item video { max-width: 90%; max-height: 80%; }
+        .close-x { position: absolute; top: 20px; left: 20px; font-size: 30px; color: #fff; z-index: 2001; }
     </style>
 </head>
 <body>
-    <header>
-        <h1><span class="live-dot">●</span> JUSTPOSE GALLERY</h1>
-    </header>
-
+    <header style="text-align:center; padding: 20px;"><h1>JUSTPOSE GALLERY</h1></header>
     <div id="gallery"></div>
 
     <div id="photoModal">
-        <span class="close-x" onclick="closeModal()">&times;</span>
+        <span class="close-x" onclick="closeModal()">✕</span>
         <div id="modalContent"></div>
     </div>
 
@@ -45,15 +33,11 @@
         async function loadGallery() {
             if (!eventId) return;
             try {
-                // Binabasa na nito ang folder sa loob ng 'Events/'
-                const res = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/Events/${eventId}?t=${Date.now()}`);
+                const res = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/Events/${eventId}`);
                 const folders = await res.json();
                 const gal = document.getElementById('gallery');
                 
-                // Sort Sessions (Newest First)
                 folders.sort((a, b) => b.name.localeCompare(a.name, undefined, {numeric: true}));
-
-                if (gal.childElementCount === folders.filter(f => f.type === 'dir').length) return;
                 gal.innerHTML = "";
 
                 for (let f of folders) {
@@ -62,10 +46,10 @@
                         card.className = "img-card";
                         card.onclick = () => openSession(f.name);
                         
-                        // Kunin ang Print Thumbnail
-                        const pRes = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/Events/${eventId}/${f.name}/Prints`);
-                        const prints = await pRes.json();
-                        if (prints[0]) card.innerHTML = `<img src="${prints[0].download_url}">`;
+                        // Kumuha ng thumbnail mula sa Media folder
+                        const mRes = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/Events/${eventId}/${f.name}/Media`);
+                        const media = await mRes.json();
+                        if (media[0]) card.innerHTML = `<img src="${media[0].download_url}">`;
                         gal.appendChild(card);
                     }
                 }
@@ -76,40 +60,27 @@
             const modal = document.getElementById('photoModal');
             const cont = document.getElementById('modalContent');
             modal.style.display = "flex";
-            cont.innerHTML = "<div style='color:white;text-align:center;width:100%'>Loading...</div>";
+            cont.innerHTML = "<div style='color:white; padding:20px;'>Loading Media...</div>";
 
-            let media = [];
-            const subs = ['Prints', 'Singles', 'Animated'];
-            for (const s of subs) {
-                try {
-                    const r = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/Events/${eventId}/${sid}/${s}`);
-                    const data = await r.json();
-                    if (Array.isArray(data)) {
-                        // FILTER: Isasama lang ang HINDI nagtatapos sa _3600.jpg
-                        const filtered = data.filter(file => !file.name.includes('_3600.jpg'));
-                        media = media.concat(filtered);
-                    }
-                } catch(e) {}
-            }
-
-            cont.innerHTML = "";
-            media.forEach(m => {
-                let div = document.createElement('div');
-                div.className = "folder-item";
-                let isVid = m.name.toLowerCase().endsWith('.mp4');
-                div.innerHTML = `
-                    <a href="${m.download_url}" download class="dl-btn">SAVE</a>
-                    ${isVid ? `<video src="${m.download_url}" controls autoplay loop playsinline></video>` : `<img src="${m.download_url}">`}
-                `;
-                cont.appendChild(div);
-            });
+            try {
+                // UPDATE: Binabasa ang Media folder structure
+                const r = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/Events/${eventId}/${sid}/Media`);
+                const media = await r.json();
+                
+                cont.innerHTML = "";
+                media.forEach(m => {
+                    let div = document.createElement('div');
+                    div.className = "folder-item";
+                    let isVid = m.name.toLowerCase().endsWith('.mp4');
+                    div.innerHTML = isVid ? `<video src="${m.download_url}" controls autoplay loop></video>` : `<img src="${m.download_url}">`;
+                    cont.appendChild(div);
+                });
+            } catch(e) { cont.innerHTML = "Error loading files."; }
         }
 
         function closeModal() { document.getElementById('photoModal').style.display = "none"; }
-        
-        // Auto-refresh every 10 seconds
-        setInterval(loadGallery, 10000);
         loadGallery();
+        setInterval(loadGallery, 15000);
     </script>
 </body>
 </html>
