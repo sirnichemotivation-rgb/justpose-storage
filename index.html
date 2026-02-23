@@ -1,73 +1,20 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Justpose Gallery</title>
-    <style>
-        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; }
-        header { padding: 20px; text-align: center; background: #111; border-bottom: 2px solid #222; }
-        #gallery { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 10px; }
-        .img-card { background: #111; border-radius: 10px; overflow: hidden; aspect-ratio: 1/1; cursor: pointer; border: 1px solid #333; }
-        .img-card img { width: 100%; height: 100%; object-fit: cover; }
-        #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 1000; }
-        #modalContent { display: flex; overflow-x: auto; width: 100%; height: 100vh; scroll-snap-type: x mandatory; }
-        .slide { min-width: 100vw; height: 100vh; scroll-snap-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .slide img, .slide video { max-width: 90%; max-height: 70%; border-radius: 8px; }
-        .close { position: absolute; top: 25px; left: 25px; font-size: 40px; color: #fff; cursor: pointer; z-index: 1100; }
-        .dl { background: #fff; color: #000; padding: 12px 25px; border-radius: 30px; text-decoration: none; font-weight: bold; margin-top: 20px; }
-        #modalContent::-webkit-scrollbar { display: none; }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header><h1 id="title">JUSTPOSE GALLERY</h1></header>
+    <header><h1 id="mainTitle">JUSTPOSE GALLERY</h1></header>
     <div id="gallery"></div>
-    <div id="modal"><div class="close" onclick="closeModal()">×</div><div id="modalContent"></div></div>
 
-    <script>
-        const params = new URLSearchParams(window.location.search);
-        const eventId = params.get('event');
-        const dbURL = `https://justposegallery-default-rtdb.asia-southeast1.firebasedatabase.app/events/${eventId}.json`;
+    <div id="photoModal">
+        <div class="close-x" onclick="closeModal()">×</div>
+        <div id="modalContent"></div>
+    </div>
 
-        if (eventId) {
-            document.getElementById('title').innerText = eventId.toUpperCase();
-            async function load() {
-                const res = await fetch(dbURL);
-                const data = await res.json();
-                if (!data) return;
-                const gal = document.getElementById('gallery');
-                gal.innerHTML = "";
-                
-                // DATA ay naka-group by Session ID. Loop natin per session.
-                Object.keys(data).reverse().forEach(sid => {
-                    const files = Object.values(data[sid]);
-                    // Ang cover card ay yung file na nasa "/Prints/" folder
-                    const print = files.find(f => f.url.includes('/Prints/')) || files[0];
-                    const card = document.createElement('div');
-                    card.className = "img-card";
-                    card.onclick = () => openModal(files);
-                    card.innerHTML = `<img src="${print.url}">`;
-                    gal.appendChild(card);
-                });
-            }
-
-            function openModal(files) {
-                const m = document.getElementById('modal');
-                const c = document.getElementById('modalContent');
-                m.style.display = "block"; c.innerHTML = "";
-                // Sort para Print ang laging unang slide
-                files.sort((a,b) => a.url.includes('/Prints/') ? -1 : 1);
-                files.forEach(f => {
-                    const div = document.createElement('div'); div.className = "slide";
-                    const isVid = f.url.toLowerCase().endsWith('.mp4');
-                    div.innerHTML = isVid ? `<video src="${f.url}" controls autoplay loop playsinline></video>` : `<img src="${f.url}">`;
-                    div.innerHTML += `<a href="${f.url}" class="dl" target="_blank" download>DOWNLOAD</a>`;
-                    c.appendChild(div);
-                });
-            }
-            function closeModal() { document.getElementById('modal').style.display = "none"; }
-            load(); setInterval(load, 5000);
-        }
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
