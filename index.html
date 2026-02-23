@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Justpose Gallery</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* FIX: In-update ko ang CSS mo dito para hindi maging 'pipi' ang images */
+        .img-card img { 
+            height: 200px !important; /* In-adjust ang height para sa singles */
+            object-fit: cover; 
+        }
+    </style>
 </head>
 <body>
     <header><h1 id="mainTitle">JUSTPOSE GALLERY</h1></header>
@@ -17,7 +24,7 @@
         const gallery = document.getElementById('gallery');
 
         if (eventId) {
-            // Firebase URL para sa real-time sync
+            // Kinukuha ang data mula sa Firebase (Singapore Server)
             const fbURL = `https://justposegallery-default-rtdb.asia-southeast1.firebasedatabase.app/events/${eventId}.json`;
 
             function loadPhotos() {
@@ -25,32 +32,34 @@
                     .then(res => res.json())
                     .then(data => {
                         if (data) {
-                            gallery.innerHTML = ""; // Linisin ang gallery
+                            gallery.innerHTML = ""; // Refresh gallery
                             
-                            // I-reverse para ang pinakabagong kuha ang nasa taas
+                            // I-reverse para laging nasa unahan ang pinakabagong kuha
                             const photoArray = Object.values(data).reverse();
                             
                             photoArray.forEach(item => {
                                 const card = document.createElement('div');
-                                card.className = "img-card"; // Gagamitin ang design mo sa style.css
+                                card.className = "img-card"; // Gagamit ng design mo mula sa style.css
                                 
-                                // Direct GitHub Link mula sa Firebase
-                                card.innerHTML = `<img src="${item.url}" onclick="window.open('${item.url}', '_blank')">`;
+                                // Direct GitHub Link ang 'item.url' na galing sa Python App
+                                card.onclick = () => window.open(item.url, '_blank');
+                                
+                                card.innerHTML = `<img src="${item.url}" loading="lazy">`;
                                 gallery.appendChild(card);
                             });
                         } else {
-                            gallery.innerHTML = "<p style='text-align:center; width:100%; color:#555;'>No photos found yet.</p>";
+                            gallery.innerHTML = "<p style='text-align:center; width:100%; color:#444;'>Waiting for photos...</p>";
                         }
                     })
-                    .catch(err => console.error("Sync Error:", err));
+                    .catch(err => console.error("Firebase Sync Error:", err));
             }
 
-            // Auto-refresh kada 5 seconds
+            // Real-time update tuwing 5 seconds
             loadPhotos();
             setInterval(loadPhotos, 5000);
 
         } else {
-            gallery.innerHTML = "<p style='text-align:center; width:100%; color:red;'>⚠️ MISSING EVENT ID (?event=NAME)</p>";
+            gallery.innerHTML = "<h2 style='color:red; text-align:center; width:100%;'>⚠️ NO EVENT ID</h2><p style='text-align:center; width:100%;'>Check URL: ?event=seeyou</p>";
         }
     </script>
 </body>
