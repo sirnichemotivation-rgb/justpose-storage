@@ -1,61 +1,47 @@
 body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 10px; }
 
-header h1 { 
-    text-align: center; font-size: 50px; margin-top: 40px; font-weight: 900; 
-}
+header h1 { text-align: center; font-size: 50px; margin-top: 40px; font-weight: 900; text-transform: uppercase; }
 
-#gallery { 
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; 
-}
+#gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
 
 .img-card { background: #111; border-radius: 10px; overflow: hidden; border: 1px solid #222; cursor: pointer; }
-.img-card img { width: 100%; height: 180px; object-fit: cover; display: block; }
+.img-card img, .img-card video { width: 100%; height: 180px; object-fit: cover; display: block; }
 
 /* MODAL / FOLDER VIEW */
 #photoModal {
     display: none; position: fixed; inset: 0; background: #000; z-index: 1000; flex-direction: column;
 }
 
-/* ITO ANG PARA SA LEFT TO RIGHT SCROLL */
+/* FIXED DOWNLOAD BUTTON - Hindi sasama sa scroll */
+.mini-download-btn {
+    position: fixed; top: 20px; right: 20px; background: #fff;
+    color: #000; width: 50px; height: 50px; border-radius: 50%;
+    display: flex; justify-content: center; align-items: center; 
+    text-decoration: none; font-weight: bold; font-size: 25px; z-index: 5000;
+}
+
+.close-x { 
+    position: fixed; top: 20px; left: 20px; font-size: 30px; 
+    color: #fff; cursor: pointer; z-index: 5000; font-weight: bold;
+    background: rgba(0,0,0,0.5); width: 45px; height: 45px; 
+    display: flex; justify-content: center; align-items: center; border-radius: 50%;
+}
+
+/* LEFT TO RIGHT SCROLL LOGIC */
 #modalContent {
-    display: flex; 
-    flex-direction: row; /* Force horizontal */
-    overflow-x: auto; 
-    overflow-y: hidden;
-    scroll-snap-type: x mandatory; 
-    height: 100vh; 
-    align-items: center; 
-    scrollbar-width: none;
+    display: flex; flex-direction: row; 
+    overflow-x: auto; overflow-y: hidden;
+    scroll-snap-type: x mandatory; height: 100vh; 
+    align-items: center; scrollbar-width: none;
 }
 #modalContent::-webkit-scrollbar { display: none; }
 
 .folder-item {
-    min-width: 100vw; /* One photo per screen width */
-    height: 100vh; 
-    scroll-snap-align: center; 
-    position: relative;
-    display: flex; 
-    justify-content: center; 
-    align-items: center;
+    min-width: 100vw; height: 100vh; 
+    scroll-snap-align: center; display: flex; 
+    justify-content: center; align-items: center;
 }
 
-.folder-item img { 
-    max-width: 95%; 
-    max-height: 85%; 
-    object-fit: contain; 
-    border-radius: 10px; 
-}
-
-.mini-download-btn {
-    position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.3);
-    backdrop-filter: blur(5px); color: #fff; width: 45px; height: 45px; border-radius: 50%;
-    display: flex; justify-content: center; align-items: center; 
-    text-decoration: none; font-weight: bold; font-size: 20px; z-index: 2000;
-}
-
-.close-x { 
-    position: absolute; top: 20px; left: 20px; font-size: 30px; 
-    color: #fff; cursor: pointer; z-index: 3000; font-weight: bold;
-    background: rgba(0,0,0,0.5); width: 40px; height: 40px; 
-    display: flex; justify-content: center; align-items: center; border-radius: 50%;
+.folder-item img, .folder-item video { 
+    max-width: 95%; max-height: 85%; object-fit: contain; border-radius: 10px; 
 }
