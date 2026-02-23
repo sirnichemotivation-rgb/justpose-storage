@@ -17,7 +17,7 @@
         const gallery = document.getElementById('gallery');
 
         if (eventId) {
-            // Firebase URL (Dito kinukuha ang real-time data)
+            // Firebase URL para sa real-time sync
             const fbURL = `https://justposegallery-default-rtdb.asia-southeast1.firebasedatabase.app/events/${eventId}.json`;
 
             function loadPhotos() {
@@ -25,19 +25,17 @@
                     .then(res => res.json())
                     .then(data => {
                         if (data) {
-                            gallery.innerHTML = ""; // Linisin ang gallery bago i-update
+                            gallery.innerHTML = ""; // Linisin ang gallery
                             
-                            // I-reverse para laging nasa taas ang pinakabago
+                            // I-reverse para ang pinakabagong kuha ang nasa taas
                             const photoArray = Object.values(data).reverse();
                             
                             photoArray.forEach(item => {
                                 const card = document.createElement('div');
-                                card.className = "img-card"; // Gamit ang design mo sa style.css
+                                card.className = "img-card"; // Gagamitin ang design mo sa style.css
                                 
-                                // Pag-click, bubukas ang full image sa bagong tab
-                                card.onclick = () => window.open(item.url, '_blank');
-                                
-                                card.innerHTML = `<img src="${item.url}">`;
+                                // Direct GitHub Link mula sa Firebase
+                                card.innerHTML = `<img src="${item.url}" onclick="window.open('${item.url}', '_blank')">`;
                                 gallery.appendChild(card);
                             });
                         } else {
@@ -47,12 +45,12 @@
                     .catch(err => console.error("Sync Error:", err));
             }
 
-            // Real-time update tuwing 5 seconds
+            // Auto-refresh kada 5 seconds
             loadPhotos();
             setInterval(loadPhotos, 5000);
 
         } else {
-            gallery.innerHTML = "<p style='text-align:center; width:100%; color:red;'>⚠️ MISSING EVENT ID</p>";
+            gallery.innerHTML = "<p style='text-align:center; width:100%; color:red;'>⚠️ MISSING EVENT ID (?event=NAME)</p>";
         }
     </script>
 </body>
