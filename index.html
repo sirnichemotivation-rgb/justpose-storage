@@ -1,0 +1,24 @@
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const eventID = urlParams.get('event');
+    const fbURL = `https://justposegallery-default-rtdb.asia-southeast1.firebasedatabase.app/events/${eventID}.json`;
+
+    function loadPhotos() {
+        fetch(fbURL)
+            .then(res => res.json())
+            .then(data => {
+                if (data) {
+                    const gallery = document.getElementById('gallery');
+                    gallery.innerHTML = "";
+                    // Pabaliktad para laging una ang pinakabago
+                    Object.values(data).reverse().forEach(item => {
+                        const img = document.createElement('img');
+                        img.src = item.url;
+                        img.className = "gallery-img";
+                        gallery.appendChild(img);
+                    });
+                }
+            });
+    }
+    setInterval(loadPhotos, 5000); // Auto-refresh every 5s
+</script>
