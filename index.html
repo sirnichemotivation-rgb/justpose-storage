@@ -7,19 +7,24 @@
     <style>
         body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 10px; overflow-x: hidden; }
         
+        /* HEADER & LOGO */
         header { display: flex; justify-content: center; align-items: center; padding: 20px 0; background: #000; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #111; }
         .main-logo { height: 70px; width: auto; object-fit: contain; }
 
+        /* GALLERY GRID */
         #gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; padding-top: 20px; padding-bottom: 50px; }
         .img-card { background: #111; border-radius: 12px; overflow: hidden; height: 190px; border: 1px solid #222; transition: transform 0.2s; }
         .img-card img { width: 100%; height: 100%; object-fit: cover; }
 
+        /* MODAL & SWIPE */
         #photoModal { display: none; position: fixed; inset: 0; background: #000; z-index: 1000; flex-direction: column; }
         #modalContent { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; width: 100vw; height: 100vh; -webkit-overflow-scrolling: touch; }
+        #modalContent::-webkit-scrollbar { display: none; }
         .folder-item { min-width: 100vw; height: 100vh; scroll-snap-align: center; display: flex; justify-content: center; align-items: center; position: relative; }
         .folder-item img { max-width: 95%; max-height: 80%; object-fit: contain; border-radius: 4px; }
 
-        .mini-download-btn { position: absolute; bottom: 40px; right: 30px; background: #fff; color: #000; width: 55px; height: 55px; border-radius: 50%; border: none; font-size: 24px; font-weight: bold; z-index: 9999; }
+        /* BUTTONS */
+        .mini-download-btn { position: absolute; bottom: 40px; right: 30px; background: #fff; color: #000; width: 55px; height: 55px; border-radius: 50%; border: none; font-size: 24px; font-weight: bold; z-index: 9999; cursor: pointer; }
         .close-x { position: absolute; top: 25px; left: 25px; font-size: 30px; color: #fff; z-index: 9999; background: rgba(0,0,0,0.5); width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 50%; cursor: pointer; }
     </style>
 </head>
@@ -39,16 +44,19 @@
     <script>
         const GH_USER = "sirnichemotivation-rgb";
         const GH_REPO = "justpose-storage";
-        // ITO ANG SOLUSYON SA 403 ERROR:
-        const GH_TOKEN = "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"; 
+        // GAMIT NA ANG BAGONG TOKEN MO:
+        const GH_TOKEN = "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"; 
         const eventId = new URLSearchParams(window.location.search).get('event');
 
         async function loadGallery() {
-            if (!eventId) return;
+            if (!eventId) {
+                document.getElementById('gallery').innerHTML = "<h2 style='text-align:center'>No Event Selected</h2>";
+                return;
+            }
             const gal = document.getElementById('gallery');
 
             try {
-                // Binago ang path: tinanggal ang "/Events/"
+                // Fetch event folder gamit ang bagong Token
                 const res = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${eventId}`, {
                     headers: { "Authorization": `token ${GH_TOKEN}` }
                 });
@@ -65,6 +73,8 @@
                             headers: { "Authorization": `token ${GH_TOKEN}` }
                         });
                         const files = await sRes.json();
+                        
+                        // Kunin lahat ng pictures sa session folder
                         const photos = files.filter(f => f.name.toLowerCase().endsWith('.jpg'));
 
                         photos.forEach((p, index) => {
@@ -78,7 +88,7 @@
                 }
             } catch (e) {
                 console.error(e);
-                gal.innerHTML = `<div style="text-align:center; padding:50px;">Waiting for photos to upload...</div>`;
+                gal.innerHTML = `<div style="text-align:center; padding:50px;">Waiting for photos to upload to "${eventId}"...</div>`;
             }
         }
 
