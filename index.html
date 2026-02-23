@@ -2,25 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JUSTPOSE LIVE GALLERY</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Justpose Online Gallery</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-    <header style="padding: 20px 10px; text-align: center;">
-        <h2 style="margin: 0; font-weight: 900; letter-spacing: 1px;">JUSTPOSE GALLERY</h2>
+    <header>
+        <h1 id="event-title">JUSTPOSE GALLERY</h1>
     </header>
-
-    <main id="gallery"></main>
-
-    <div id="photoModal">
-        <span class="close-x" onclick="closeModal()">✕</span>
-        <div id="modalContent">
-            </div>
-    </div>
-
+    <main id="gallery-container">
+        <div id="loader">Loading your memories...</div>
+    </main>
     <script src="script.js"></script>
-
 </body>
 </html>
