@@ -1,32 +1,100 @@
-body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 10px; }
+body { 
+    background: #000; 
+    color: #fff; 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+    margin: 0; 
+    padding: 10px; 
+    overflow-x: hidden;
+}
 
 /* GALLERY GRID */
-#gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
-.img-card { background: #111; border-radius: 8px; overflow: hidden; height: 180px; }
+#gallery { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
+    gap: 12px; 
+    padding-bottom: 50px;
+}
+.img-card { 
+    background: #111; 
+    border-radius: 12px; 
+    overflow: hidden; 
+    height: 190px; 
+    border: 1px solid #222;
+    transition: transform 0.2s;
+}
+.img-card:active { transform: scale(0.95); }
 .img-card img { width: 100%; height: 100%; object-fit: cover; }
 
-/* HORIZONTAL SCROLL */
-#photoModal { display: none; position: fixed; inset: 0; background: #000; z-index: 1000; flex-direction: column; }
+/* FULLSCREEN MODAL */
+#photoModal { 
+    display: none; 
+    position: fixed; 
+    inset: 0; 
+    background: #000; 
+    z-index: 1000; 
+    flex-direction: column; 
+}
+
 #modalContent {
     display: flex !important;
     flex-direction: row !important;
-    flex-wrap: nowrap !important;
     overflow-x: auto !important;
     scroll-snap-type: x mandatory;
     width: 100vw;
     height: 100vh;
+    -webkit-overflow-scrolling: touch;
 }
+
+/* Hide Scrollbar */
+#modalContent::-webkit-scrollbar { display: none; }
+
 .folder-item {
     min-width: 100vw !important;
     height: 100vh;
     scroll-snap-align: center;
-    display: flex; justify-content: center; align-items: center;
+    display: flex; 
+    justify-content: center; 
+    align-items: center;
     position: relative;
+    background: #000;
 }
-.folder-item img, .folder-item video { max-width: 95%; max-height: 85%; object-fit: contain; }
 
-.mini-download-btn {
-    position: absolute; top: 20px; right: 20px; background: white; color: black;
-    width: 50px; height: 50px; border-radius: 50%; border: none; font-size: 24px; font-weight: bold; z-index: 9999;
+.folder-item img { 
+    max-width: 95%; 
+    max-height: 80%; 
+    object-fit: contain; 
+    border-radius: 4px;
 }
-.close-x { position: absolute; top: 20px; left: 20px; font-size: 35px; color: #fff; z-index: 9999; }
+
+/* BUTTONS */
+.mini-download-btn {
+    position: absolute; 
+    bottom: 40px; 
+    right: 30px; 
+    background: #fff; 
+    color: #000;
+    width: 55px; 
+    height: 55px; 
+    border-radius: 50%; 
+    border: none; 
+    font-size: 24px; 
+    font-weight: bold; 
+    z-index: 9999;
+    box-shadow: 0 4px 15px rgba(255,255,255,0.2);
+}
+
+.close-x { 
+    position: absolute; 
+    top: 25px; 
+    left: 25px; 
+    font-size: 30px; 
+    color: #fff; 
+    z-index: 9999; 
+    background: rgba(0,0,0,0.5);
+    width: 45px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
