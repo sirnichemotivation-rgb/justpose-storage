@@ -99,3 +99,4 @@ function closeModal() { modal.style.display = "none"; }
 loadGallery();
 // Auto refresh every 20 seconds
 setInterval(loadGallery, 20000);
+
