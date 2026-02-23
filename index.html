@@ -29,8 +29,8 @@
                     
                     Object.keys(sessions).reverse().forEach(sessId => {
                         const files = Object.values(sessions[sessId]);
-                        // Hanapin ang "Print" para thumbnail
-                        const cover = files.find(f => f.url.includes('Prints')) || files[0];
+                        // Cover photo ay dapat yung galing sa 'Prints' folder
+                        const cover = files.find(f => f.url.includes('/Prints/')) || files[0];
                         
                         const card = document.createElement('div');
                         card.className = "img-card";
@@ -47,15 +47,21 @@
                 modal.style.display = "flex";
                 cont.innerHTML = "";
 
+                // I-sort para Print laging mauna
+                files.sort((a,b) => a.url.includes('Prints') ? -1 : 1);
+
                 files.forEach(file => {
                     const div = document.createElement('div');
                     div.className = "folder-item";
+                    
                     if (file.url.toLowerCase().endsWith('.mp4')) {
-                        div.innerHTML = `<video src="${file.url}" controls autoplay loop></video>
-                                         <a href="${file.url}" class="mini-download-btn" download>↓</a>`;
+                        div.innerHTML = `
+                            <video src="${file.url}" controls autoplay loop></video>
+                            <a href="${file.url}" class="mini-download-btn" download>↓</a>`;
                     } else {
-                        div.innerHTML = `<img src="${file.url}">
-                                         <a href="${file.url}" class="mini-download-btn" download>↓</a>`;
+                        div.innerHTML = `
+                            <img src="${file.url}">
+                            <a href="${file.url}" class="mini-download-btn" download>↓</a>`;
                     }
                     cont.appendChild(div);
                 });
