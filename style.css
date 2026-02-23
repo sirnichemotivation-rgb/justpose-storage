@@ -1,3 +1,12 @@
+body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 10px; }
+
+/* GALLERY GRID */
+#gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.img-card { background: #111; border-radius: 8px; overflow: hidden; height: 180px; }
+.img-card img { width: 100%; height: 100%; object-fit: cover; }
+
+/* HORIZONTAL SCROLL */
+#photoModal { display: none; position: fixed; inset: 0; background: #000; z-index: 1000; flex-direction: column; }
 #modalContent {
     display: flex !important;
     flex-direction: row !important;
@@ -8,15 +17,16 @@
     height: 100vh;
 }
 .folder-item {
-    min-width: 100vw;
+    min-width: 100vw !important;
+    height: 100vh;
     scroll-snap-align: center;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    display: flex; justify-content: center; align-items: center;
     position: relative;
 }
+.folder-item img, .folder-item video { max-width: 95%; max-height: 85%; object-fit: contain; }
+
 .mini-download-btn {
-    position: absolute; top: 20px; right: 20px; 
-    background: white; color: black; border-radius: 50%;
-    width: 50px; height: 50px; font-size: 25px; border: none; z-index: 100;
+    position: absolute; top: 20px; right: 20px; background: white; color: black;
+    width: 50px; height: 50px; border-radius: 50%; border: none; font-size: 24px; font-weight: bold; z-index: 9999;
 }
+.close-x { position: absolute; top: 20px; left: 20px; font-size: 35px; color: #fff; z-index: 9999; }
