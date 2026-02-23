@@ -1,62 +1,89 @@
-// script.js
+// CONFIGURATION PARA SA GITHUB [cite: 2026-02-06]
+const GH_USER = "sirnichemotivation-rgb";
+const GH_REPO = "justpose-storage";
 const urlParams = new URLSearchParams(window.location.search);
 const eventId = urlParams.get('event');
-const fbURL = `https://justposegallery-default-rtdb.asia-southeast1.firebasedatabase.app/events/${eventId}.json`;
 
-async function loadGallery() {
-    try {
-        const response = await fetch(fbURL);
-        const sessions = await response.json();
-        if (!sessions) return;
+const gallery = document.getElementById('gallery');
+const modal = document.getElementById('photoModal');
+const modalContent = document.getElementById('modalContent');
 
-        const gal = document.getElementById('gallery');
-        gal.innerHTML = ""; // Clear muna para hindi patong-patong
+// 1. LOAD MAIN SESSIONS (Latest muna sa taas)
+if (eventId) {
+    const apiURL = `https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/Events/${eventId}`;
+    
+    fetch(apiURL)
+        .then(r => r.json())
+        .then(folders => {
+            gallery.innerHTML = "";
+            // Sort folders para latest (highest timestamp) ang una
+            folders.sort((a, b) => b.name.localeCompare(a.name));
 
-        // I-loop lahat ng Session Folders (sess_123, sess_456, etc.)
-        Object.keys(sessions).reverse().forEach(sessId => {
-            const filesObj = sessions[sessId];
-            const filesArray = Object.values(filesObj); // Lahat ng files sa loob ng session
-
-            // Hanapin ang "Print" na file para maging cover ng card
-            const printFile = filesArray.find(f => f.url.toLowerCase().includes('print')) || filesArray[0];
-
-            const card = document.createElement('div');
-            card.className = "img-card";
-            card.onclick = () => openFolder(filesArray); // Pag click, lalabas lahat ng files sa session
-            card.innerHTML = `<img src="${printFile.url}">`;
-            gal.appendChild(card);
+            folders.forEach(folder => {
+                if (folder.type === 'dir') {
+                    const sessId = folder.name;
+                    const card = document.createElement('div');
+                    card.className = "img-card"; 
+                    card.onclick = () => openFolder(sessId);
+                    
+                    // Thumbnail: Hanapin ang image sa loob ng Prints subfolder
+                    fetch(`${apiURL}/${sessId}/Prints`)
+                        .then(res => res.json())
+                        .then(files => {
+                            if(files && files[0]) {
+                                card.innerHTML = `<img src="${files[0].download_url}">
+                                <div style="padding:5px; text-align:center; font-size:10px; color:#555;">TAP TO VIEW</div>`;
+                            }
+                        });
+                    gallery.appendChild(card);
+                }
+            });
+        }).catch(err => {
+            gallery.innerHTML = "<p style='text-align:center; padding:50px;'>No sessions found.</p>";
         });
-    } catch (e) { console.log("Gallery Error:", e); }
 }
 
-function openFolder(files) {
-    const modal = document.getElementById('photoModal');
-    const cont = document.getElementById('modalContent');
-    modal.style.display = "flex";
-    cont.innerHTML = ""; // Linisin ang loob ng swipe view
+// 2. OPEN FOLDER (Swipe view para sa Singles, Animated, at Prints)
+async function openFolder(sessId) {
+    modal.style.display = "flex"; 
+    modalContent.innerHTML = "<div style='color:white; width:100vw; text-align:center;'>Opening Session...</div>";
 
-    files.forEach(file => {
-        const div = document.createElement('div');
-        div.className = "folder-item";
-        const isVideo = file.url.toLowerCase().endsWith('.mp4');
+    try {
+        const subFolders = ['Prints', 'Singles', 'Animated'];
+        let allFiles = [];
 
-        if (isVideo) {
-            div.innerHTML = `
-                <video src="${file.url}" controls autoplay loop playsinline></video>
-                <a href="${file.url}" class="mini-download-btn" target="_blank" download>DOWNLOAD VIDEO</a>`;
-        } else {
-            div.innerHTML = `
-                <img src="${file.url}">
-                <a href="${file.url}" class="mini-download-btn" target="_blank" download>DOWNLOAD IMAGE</a>`;
+        // Loop sa subfolders para kunin lahat ng media
+        for (const sub of subFolders) {
+            try {
+                const r = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/Events/${eventId}/${sessId}/${sub}`);
+                const data = await r.json();
+                if (Array.isArray(data)) allFiles = allFiles.concat(data);
+            } catch (e) { /* Folder skip kung wala */ }
         }
-        cont.appendChild(div);
-    });
+
+        modalContent.innerHTML = "";
+        
+        allFiles.forEach(file => {
+            const div = document.createElement('div'); 
+            div.className = "folder-item"; // Naka-style ito sa CSS mo para sa swipe
+            const isVid = file.name.toLowerCase().endsWith('.mp4');
+            
+            if (isVid) {
+                div.innerHTML = `
+                    <a href="${file.download_url}" class="mini-download-btn" download>↓</a>
+                    <video src="${file.download_url}" style="max-width:95%; max-height:85%;" controls autoplay loop playsinline></video>
+                `;
+            } else {
+                div.innerHTML = `
+                    <a href="${file.download_url}" class="mini-download-btn" download>↓</a>
+                    <img src="${file.download_url}">
+                `;
+            }
+            modalContent.appendChild(div);
+        });
+    } catch (err) {
+        modalContent.innerHTML = "<div style='color:red; width:100vw; text-align:center;'>Error loading photos.</div>";
+    }
 }
 
-function closeModal() {
-    document.getElementById('photoModal').style.display = "none";
-    document.getElementById('modalContent').innerHTML = ""; // Stop video playback
-}
-
-loadGallery();
-setInterval(loadGallery, 5000);
+function closeModal() { modal.style.display = "none"; }
