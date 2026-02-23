@@ -5,62 +5,130 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>JUSTPOSE GALLERY</title>
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 0; }
-        header { text-align: center; padding: 20px; border-bottom: 1px solid #222; }
-        #gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; padding: 15px; }
-        .img-card { background: #111; border-radius: 8px; overflow: hidden; height: 200px; cursor: pointer; }
+        /* UI DESIGN BASE SA SCREENSHOTS MO */
+        body { background: #000; color: #fff; font-family: -apple-system, sans-serif; margin: 0; padding: 0; overflow-x: hidden; }
+        
+        header { 
+            display: flex; justify-content: center; align-items: center; 
+            padding: 20px 0; background: #000; position: sticky; top: 0; 
+            z-index: 100; border-bottom: 1px solid #111; 
+        }
+        .main-logo { height: 60px; width: auto; object-fit: contain; }
+
+        #gallery { 
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
+            gap: 12px; padding: 15px; padding-bottom: 50px;
+        }
+        .img-card { 
+            background: #111; border-radius: 12px; overflow: hidden; 
+            height: 190px; border: 1px solid #222; position: relative;
+        }
         .img-card img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* FULLSCREEN MODAL */
+        #photoModal { display: none; position: fixed; inset: 0; background: #000; z-index: 1000; flex-direction: column; }
+        #modalContent { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; width: 100vw; height: 100vh; }
+        .folder-item { 
+            min-width: 100vw; height: 100vh; scroll-snap-align: center; 
+            display: flex; justify-content: center; align-items: center; position: relative; 
+        }
+        .folder-item img { max-width: 95%; max-height: 80%; object-fit: contain; }
+
+        .download-btn { 
+            position: absolute; bottom: 40px; right: 30px; background: #fff; color: #000; 
+            width: 55px; height: 55px; border-radius: 50%; border: none; font-size: 24px; font-weight: bold; 
+        }
+        .close-x { 
+            position: absolute; top: 25px; left: 25px; font-size: 30px; color: #fff; 
+            z-index: 9999; background: rgba(0,0,0,0.5); width: 45px; height: 45px; 
+            display: flex; align-items: center; justify-content: center; border-radius: 50%;
+        }
     </style>
 </head>
 <body>
-    <header><h1>JUSTPOSE GALLERY</h1></header>
+
+    <header>
+        <img src="logo.png" alt="JUSTPOSE GALLERY" class="main-logo">
+    </header>
+    
     <div id="gallery"></div>
 
-    <script>
-        const GH_USER = "sirnichemotivation-rgb";
-        const GH_REPO = "justpose-storage";
-        // ILAGAY DITO ANG IYONG BAGONG TOKEN
-        const GH_TOKEN = "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"; 
+    <div id="photoModal">
+        <div class="close-x" onclick="closeModal()">×</div>
+        <div id="modalContent"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getStorage, ref, listAll, getDownloadURL, getMetadata } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+        // PALITAN MO ITO NG IYONG FIREBASE PROJECT ID
+        const firebaseConfig = {
+            storageBucket: "your-project-id.appspot.com" 
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const storage = getStorage(app);
         const eventId = new URLSearchParams(window.location.search).get('event');
 
         async function loadGallery() {
-            const gal = document.getElementById('gallery');
             if (!eventId) {
-                gal.innerHTML = "<p style='text-align:center'>Missing Event ID.</p>";
+                document.getElementById('gallery').innerHTML = "<h2 style='text-align:center'>Missing Event ID</h2>";
                 return;
             }
 
+            const gal = document.getElementById('gallery');
+            const listRef = ref(storage, eventId);
+
             try {
-                // TAMA NA ANG PATH: Tinanggal ang "/Events/"
-                // MAY HEADERS NA: Para gumana ang Token at iwas 403 error
-                const res = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${eventId}`, {
-                    headers: { "Authorization": `token ${GH_TOKEN}` }
-                });
-
-                if (!res.ok) throw new Error("Folder not found");
-                const sessions = await res.json();
+                const res = await listAll(listRef);
                 
-                gal.innerHTML = "";
-                for (let s of sessions) {
-                    if (s.type === 'dir') {
-                        const sRes = await fetch(s.url, {
-                            headers: { "Authorization": `token ${GH_TOKEN}` }
-                        });
-                        const files = await sRes.json();
-                        const photos = files.filter(f => f.name.toLowerCase().endsWith('.jpg'));
+                // Kunin lahat ng URLs at Metadata para ma-sort natin by date
+                const items = await Promise.all(res.items.map(async (item) => {
+                    const url = await getDownloadURL(item);
+                    const meta = await getMetadata(item);
+                    return { url, time: new Date(meta.timeCreated) };
+                }));
 
-                        photos.forEach(p => {
-                            const card = document.createElement('div');
-                            card.className = "img-card";
-                            card.innerHTML = `<img src="${p.download_url}" loading="lazy">`;
-                            gal.appendChild(card);
-                        });
-                    }
-                }
+                // Sort: Pinakabagong upload sa taas
+                items.sort((a, b) => b.time - a.time);
+
+                gal.innerHTML = "";
+                items.forEach((item, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'img-card';
+                    card.innerHTML = `<img src="${item.url}" loading="lazy">`;
+                    card.onclick = () => openModal(items, index);
+                    gal.appendChild(card);
+                });
             } catch (e) {
-                gal.innerHTML = `<p style="text-align:center">Error: ${e.message}</p>`;
+                console.error(e);
+                gal.innerHTML = "<h2 style='text-align:center'>No photos found yet.</h2>";
             }
         }
+
+        window.openModal = function(items, startIndex) {
+            const modal = document.getElementById('photoModal');
+            const cont = document.getElementById('modalContent');
+            modal.style.display = 'flex';
+            cont.innerHTML = "";
+
+            items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'folder-item';
+                div.innerHTML = `
+                    <img src="${item.url}">
+                    <button class="download-btn" onclick="window.open('${item.url}')">↓</button>
+                `;
+                cont.appendChild(div);
+            });
+            cont.scrollLeft = window.innerWidth * startIndex;
+        }
+
+        window.closeModal = function() {
+            document.getElementById('photoModal').style.display = 'none';
+        }
+
         window.onload = loadGallery;
     </script>
 </body>
