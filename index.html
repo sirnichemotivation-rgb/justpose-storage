@@ -1,10 +1,71 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <link rel="stylesheet" href="style.css"> </head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>JUSTPOSE GALLERY</title>
+    <style>
+        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 10px; }
+        #gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+        .img-card { background: #111; border-radius: 12px; overflow: hidden; height: 180px; border: 1px solid #333; cursor: pointer; }
+        .img-card img { width: 100%; height: 100%; object-fit: cover; }
+        #photoModal { display: none; position: fixed; inset: 0; background: #000; z-index: 1000; flex-direction: column; }
+        #modalContent { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; width: 100vw; height: 100vh; }
+        .item { min-width: 100vw; height: 100vh; scroll-snap-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .item img { max-width: 95%; max-height: 75%; border-radius: 8px; }
+        .close { position: absolute; top: 20px; left: 20px; font-size: 30px; color: #fff; z-index: 2001; }
+        .btn { margin-top: 15px; background: #fff; color: #000; padding: 10px 25px; border-radius: 20px; text-decoration: none; font-weight: bold; }
+    </style>
+</head>
 <body>
+    <h2 style="text-align:center">JUSTPOSE GALLERY</h2>
     <div id="gallery"></div>
-    
-    <script src="script.js"></script> 
+    <div id="photoModal"><span class="close" onclick="closeM()">✕</span><div id="modalContent"></div></div>
+
+    <script>
+        const GH_USER = "sirnichemotivation-rgb";
+        const GH_REPO = "justpose-storage";
+        const eId = new URLSearchParams(window.location.search).get('event');
+
+        async function loadG() {
+            if (!eId) return;
+            try {
+                const r = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/Events/${eId}?t=${Date.now()}`);
+                const sess = await r.json();
+                const gal = document.getElementById('gallery');
+                gal.innerHTML = "";
+                sess.sort((a,b) => b.name.localeCompare(a.name, undefined, {numeric:true}));
+                
+                for (let s of sess) {
+                    if (s.type === 'dir') {
+                        let div = document.createElement('div'); div.className = "img-card";
+                        div.onclick = () => openS(s.name);
+                        const fr = await fetch(s.url);
+                        const files = await fr.json();
+                        // Thumbnail ang unang image (Print)
+                        if (files[0]) div.innerHTML = `<img src="${files[0].download_url}">`;
+                        gal.appendChild(div);
+                    }
+                }
+            } catch (e) {}
+        }
+
+        async function openS(sid) {
+            const m = document.getElementById('photoModal'); const c = document.getElementById('modalContent');
+            m.style.display = "flex"; c.innerHTML = "<div style='padding:50px;'>Loading...</div>";
+            try {
+                const r = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/Events/${eId}/${sid}`);
+                const files = await r.json();
+                c.innerHTML = "";
+                files.forEach(f => {
+                    let d = document.createElement('div'); d.className = "item";
+                    d.innerHTML = `<img src="${f.download_url}"><a href="${f.download_url}" download class="btn">SAVE PHOTO</a>`;
+                    c.appendChild(d);
+                });
+            } catch(e) {}
+        }
+
+        function closeM() { document.getElementById('photoModal').style.display = "none"; }
+        loadG(); setInterval(loadG, 20000);
+    </script>
 </body>
 </html>
